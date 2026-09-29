@@ -8,10 +8,20 @@ int main(void) {
     while (1) {
         gridClear();
 
-        gridSetString(2, 1, "TUILIB test", (Color){255, 255, 0, 0, 0, 0});
-        gridSetString(2, 2, "###", (Color){0, 255, 0, 0, 0, 0});
+        drawString(2, 1, "TUILIB test", (Color){255, 255, 0, 0, 0, 0});
 
-        drawBoxR(0, 0, 20, 20, (Color){0, 0, 255, 0, 0, 0});
+        drawFullBlock(2, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawTopBlock(3, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawBottomBlock(4, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawFullBlock(5, 2, (Color){0, 255, 0, 0, 0, 0});
+        
+        drawSquare(7, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawCircle(9, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawTriangleUp(11, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawTriangleDown(13, 2, (Color){0, 255, 0, 0, 0, 0});
+        drawDiamond(15, 2, (Color){0, 255, 0, 0, 0, 0});
+
+        drawBoxTitle(0, 0, 79, 23, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
 
         gridFlush();
 

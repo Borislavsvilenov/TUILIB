@@ -41,7 +41,7 @@ void gridClear(void) {
   }
 }
 
-void gridSetChar(int x, int y, const char* ch, const Color col) {
+void drawChar(int x, int y, const char* ch, const Color col) {
   Tile* t = &buf.back[x][y];
 
   if(x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
@@ -51,13 +51,98 @@ void gridSetChar(int x, int y, const char* ch, const Color col) {
   t->col = col;
 }
 
-void gridSetString(int x, int y, const char* str, const Color col) {
+void drawFullBlock(int x, int y, const Color col) {
+  drawChar(x, y, "█", col);
+}
+
+void drawTopBlock(int x, int y, const Color col) {
+  drawChar(x, y, "▀", col);
+}
+
+void drawBottomBlock(int x, int y, const Color col) {
+  drawChar(x, y, "▄", col);
+}
+
+void drawLeftBlock(int x, int y, const Color col) {
+  drawChar(x, y, "▌", col);
+}
+
+void drawRightBlock(int x, int y, const Color col) {
+  drawChar(x, y, "▐", col);
+}
+
+void drawSquare(int x, int y, const Color col) {
+  drawChar(x, y, "■", col);
+}
+
+void drawCircle(int x, int y, const Color col) {
+  drawChar(x, y, "●", col);
+}
+
+void drawTriangleUp(int x, int y, const Color col) {
+  drawChar(x, y, "▲", col);
+}
+
+void drawTriangleDown(int x, int y, const Color col) {
+  drawChar(x, y, "▼", col);
+}
+
+void drawDiamond(int x, int y, const Color col) {
+  drawChar(x, y, "◆", col);
+}
+
+void drawString(int x, int y, const char* str, const Color col) {
   int curr_x = x;
   while( *str && curr_x < WIDTH ) {
     char ch_buf[2] = { *str, '\0' };
-    gridSetChar(curr_x, y, ch_buf, col);
+    drawChar(curr_x, y, ch_buf, col);
     curr_x++;
     str++;
+  }
+}
+
+void drawBox(int ox, int oy, int ex, int ey, const Color col) {
+  if(ox < 0) ox = 0;
+  if(oy < 0) oy = 0;
+  if(ex >= WIDTH) ex = WIDTH;
+  if(ey >= HEIGHT) ey = HEIGHT;
+
+  Tile* t;
+
+  t = &buf.back[ox][oy];
+  strcpy(t->ch, "┌");
+  t->col = col;
+
+  t = &buf.back[ex][oy];
+  strcpy(t->ch, "┐");
+  t->col = col;
+
+  t = &buf.back[ox][ey];
+  strcpy(t->ch, "└");
+  t->col = col;
+  
+  t = &buf.back[ex][ey];
+  strcpy(t->ch, "┘");
+  t->col = col;
+
+  for(int i = ox+1; i < ex; i++) {
+    t = &buf.back[i][oy];
+    strcpy(t->ch, "─");
+    t->col = col;
+
+    t = &buf.back[i][ey];
+    strcpy(t->ch, "─");
+    t->col = col;
+  }
+
+  for(int i = oy+1; i < ey; i++) {
+    t = &buf.back[ox][i];
+    strcpy(t->ch, "│");
+    t->col = col;
+
+    t = &buf.back[ex][i];
+    strcpy(t->ch, "│");
+    t->col = col;
   }
 }
 
@@ -106,6 +191,81 @@ void drawBoxR(int ox, int oy, int ex, int ey, const Color col) {
   }
 }
 
+void drawBoxD(int ox, int oy, int ex, int ey, const Color col) {
+  if(ox < 0) ox = 0;
+  if(oy < 0) oy = 0;
+  if(ex >= WIDTH) ex = WIDTH;
+  if(ey >= HEIGHT) ey = HEIGHT;
+
+  Tile* t;
+
+  t = &buf.back[ox][oy];
+  strcpy(t->ch, "╔");
+  t->col = col;
+
+  t = &buf.back[ex][oy];
+  strcpy(t->ch, "╗");
+  t->col = col;
+
+  t = &buf.back[ox][ey];
+  strcpy(t->ch, "╚");
+  t->col = col;
+  
+  t = &buf.back[ex][ey];
+  strcpy(t->ch, "╝");
+  t->col = col;
+
+  for(int i = ox+1; i < ex; i++) {
+    t = &buf.back[i][oy];
+    strcpy(t->ch, "═");
+    t->col = col;
+
+    t = &buf.back[i][ey];
+    strcpy(t->ch, "═");
+    t->col = col;
+  }
+
+  for(int i = oy+1; i < ey; i++) {
+    t = &buf.back[ox][i];
+    strcpy(t->ch, "║");
+    t->col = col;
+
+    t = &buf.back[ex][i];
+    strcpy(t->ch, "║");
+    t->col = col;
+  }
+}
+
+void drawBoxTitle(int ox, int oy, int ex, int ey, const Color col, const char* str, const unsigned char type) {
+  if(ox < 0) ox = 0;
+  if(oy < 0) oy = 0;
+  if(ex >= WIDTH) ex = WIDTH;
+  if(ey >= HEIGHT) ey = HEIGHT;
+
+  switch (type) {
+    case 's':
+      drawBox(ox, oy, ex, ey, col);
+      break;
+
+    case 'r':
+      drawBoxR(ox, oy, ex, ey, col);
+      break;
+
+    case 'd':
+      drawBoxD(ox, oy, ex, ey, col);
+      break;
+  }
+
+  int len = strlen(str);
+  int mx = (ox + ex - len) / 2;
+
+  drawString(mx, oy, str, col);
+}
+
+void drawBrail(int x, int y, const char* ch, const Color col) {
+  drawChar(x, y, ch, col);
+}
+
 void appendToBuf(helperBuf* HB, const char* data) {
   size_t cap = sizeof(HB->data) - HB->len;
   size_t len = strlen(data);
@@ -145,3 +305,5 @@ void gridFlush(void) {
     write(STDOUT_FILENO, HB.data, HB.len);
   }
 }
+
+
