@@ -5,13 +5,13 @@
 int main(void) {
     printf("\x1b[2J\x1b[?25l"); 
     
-    int cursor_x = 10, cursor_y = 10;
-
     while (1) {
         gridClear();
 
-        gridSetString(2, 1, "Double-Buffered C TUI Engine", (Color){255, 255, 0, 0, 0, 0});
-        gridSetChar(cursor_x, cursor_y, "█", (Color){0, 255, 128, 0, 0, 0});
+        gridSetString(2, 1, "TUILIB test", (Color){255, 255, 0, 0, 0, 0});
+        gridSetString(2, 2, "###", (Color){0, 255, 0, 0, 0, 0});
+
+        drawBoxR(0, 0, 20, 20, (Color){0, 0, 255, 0, 0, 0});
 
         gridFlush();
 

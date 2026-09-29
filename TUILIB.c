@@ -61,6 +61,51 @@ void gridSetString(int x, int y, const char* str, const Color col) {
   }
 }
 
+void drawBoxR(int ox, int oy, int ex, int ey, const Color col) {
+  if(ox < 0) ox = 0;
+  if(oy < 0) oy = 0;
+  if(ex >= WIDTH) ex = WIDTH;
+  if(ey >= HEIGHT) ey = HEIGHT;
+
+  Tile* t;
+
+  t = &buf.back[ox][oy];
+  strcpy(t->ch, "╭");
+  t->col = col;
+
+  t = &buf.back[ex][oy];
+  strcpy(t->ch, "╮");
+  t->col = col;
+
+  t = &buf.back[ox][ey];
+  strcpy(t->ch, "╰");
+  t->col = col;
+  
+  t = &buf.back[ex][ey];
+  strcpy(t->ch, "╯");
+  t->col = col;
+
+  for(int i = ox+1; i < ex; i++) {
+    t = &buf.back[i][oy];
+    strcpy(t->ch, "─");
+    t->col = col;
+
+    t = &buf.back[i][ey];
+    strcpy(t->ch, "─");
+    t->col = col;
+  }
+
+  for(int i = oy+1; i < ey; i++) {
+    t = &buf.back[ox][i];
+    strcpy(t->ch, "│");
+    t->col = col;
+
+    t = &buf.back[ex][i];
+    strcpy(t->ch, "│");
+    t->col = col;
+  }
+}
+
 void appendToBuf(helperBuf* HB, const char* data) {
   size_t cap = sizeof(HB->data) - HB->len;
   size_t len = strlen(data);
@@ -84,7 +129,7 @@ void gridFlush(void) {
         snprintf(temp, sizeof(temp), "\x1b[%d;%dH", j+1, i+1);
         appendToBuf(&HB, temp);
 
-        snprintf(temp, sizeof(temp), "\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d:%dm", 
+        snprintf(temp, sizeof(temp), "\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d;%dm", 
             back->col.fg_r, back->col.fg_g, back->col.fg_b,
             back->col.bg_r, back->col.bg_g, back->col.bg_b);
         appendToBuf(&HB, temp);
