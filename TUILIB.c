@@ -3,9 +3,22 @@
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
+#include <locale.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #define WIDTH 80
 #define HEIGHT 24
+
+typedef struct {
+  int x;
+  int y;
+} Vec2;
+
+typedef struct {
+  Vec2 size;
+  uint8_t* data;
+} Matrix;
 
 typedef struct {
   unsigned char fg_r, fg_g, fg_b;
@@ -25,7 +38,7 @@ typedef struct {
 typedef struct {
   char data[128 * 1024];
   size_t len;
-} helperBuf;
+} HelperBuf;
 
 static ScreenBuffer buf = {0};
 
@@ -41,232 +54,287 @@ void gridClear(void) {
   }
 }
 
-void drawChar(int x, int y, const char* ch, const Color col) {
-  Tile* t = &buf.back[x][y];
+void drawChar(Vec2 pos, const char* ch, const Color col) {
+  Tile* t = &buf.back[pos.x][pos.y];
 
-  if(x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+  if(pos.x < 0 || pos.x >= WIDTH || pos.y < 0 || pos.y >= HEIGHT) return;
 
   strncpy(t->ch, ch, 4);
   t->ch[3] = '\0';
   t->col = col;
 }
 
-void drawFullBlock(int x, int y, const Color col) {
-  drawChar(x, y, "█", col);
+void drawFullBlock(Vec2 pos, const Color col) {
+  drawChar(pos, "█", col);
 }
 
-void drawTopBlock(int x, int y, const Color col) {
-  drawChar(x, y, "▀", col);
+void drawTopBlock(Vec2 pos, const Color col) {
+  drawChar(pos, "▀", col);
 }
 
-void drawBottomBlock(int x, int y, const Color col) {
-  drawChar(x, y, "▄", col);
+void drawBottomBlock(Vec2 pos, const Color col) {
+  drawChar(pos, "▄", col);
 }
 
-void drawLeftBlock(int x, int y, const Color col) {
-  drawChar(x, y, "▌", col);
+void drawLeftBlock(Vec2 pos, const Color col) {
+  drawChar(pos, "▌", col);
 }
 
-void drawRightBlock(int x, int y, const Color col) {
-  drawChar(x, y, "▐", col);
+void drawRightBlock(Vec2 pos, const Color col) {
+  drawChar(pos, "▐", col);
 }
 
-void drawSquare(int x, int y, const Color col) {
-  drawChar(x, y, "■", col);
+void drawSquare(Vec2 pos, const Color col) {
+  drawChar(pos, "■", col);
 }
 
-void drawCircle(int x, int y, const Color col) {
-  drawChar(x, y, "●", col);
+void drawCircle(Vec2 pos, const Color col) {
+  drawChar(pos, "●", col);
 }
 
-void drawTriangleUp(int x, int y, const Color col) {
-  drawChar(x, y, "▲", col);
+void drawTriangleUp(Vec2 pos, const Color col) {
+  drawChar(pos, "▲", col);
 }
 
-void drawTriangleDown(int x, int y, const Color col) {
-  drawChar(x, y, "▼", col);
+void drawTriangleDown(Vec2 pos, const Color col) {
+  drawChar(pos, "▼", col);
 }
 
-void drawDiamond(int x, int y, const Color col) {
-  drawChar(x, y, "◆", col);
+void drawDiamond(Vec2 pos, const Color col) {
+  drawChar(pos, "◆", col);
 }
 
-void drawString(int x, int y, const char* str, const Color col) {
-  int curr_x = x;
+void drawString(Vec2 pos, const char* str, const Color col) {
+  int curr_x = pos.x;
   while( *str && curr_x < WIDTH ) {
     char ch_buf[2] = { *str, '\0' };
-    drawChar(curr_x, y, ch_buf, col);
+    drawChar((Vec2){curr_x, pos.y}, ch_buf, col);
     curr_x++;
     str++;
   }
 }
 
-void drawBox(int ox, int oy, int ex, int ey, const Color col) {
-  if(ox < 0) ox = 0;
-  if(oy < 0) oy = 0;
-  if(ex >= WIDTH) ex = WIDTH;
-  if(ey >= HEIGHT) ey = HEIGHT;
+void drawBox(Vec2 opos, Vec2 epos, const Color col) {
+  if(opos.x < 0) opos.x = 0;
+  if(opos.y < 0) opos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
 
   Tile* t;
 
-  t = &buf.back[ox][oy];
+  t = &buf.back[opos.x][opos.y];
   strcpy(t->ch, "┌");
   t->col = col;
 
-  t = &buf.back[ex][oy];
+  t = &buf.back[epos.x][opos.y];
   strcpy(t->ch, "┐");
   t->col = col;
 
-  t = &buf.back[ox][ey];
+  t = &buf.back[opos.x][epos.y];
   strcpy(t->ch, "└");
   t->col = col;
   
-  t = &buf.back[ex][ey];
+  t = &buf.back[epos.x][epos.y];
   strcpy(t->ch, "┘");
   t->col = col;
 
-  for(int i = ox+1; i < ex; i++) {
-    t = &buf.back[i][oy];
+  for(int i = opos.x+1; i < epos.x; i++) {
+    t = &buf.back[i][opos.y];
     strcpy(t->ch, "─");
     t->col = col;
 
-    t = &buf.back[i][ey];
+    t = &buf.back[i][epos.y];
     strcpy(t->ch, "─");
     t->col = col;
   }
 
-  for(int i = oy+1; i < ey; i++) {
-    t = &buf.back[ox][i];
+  for(int i = opos.y+1; i < epos.y; i++) {
+    t = &buf.back[opos.x][i];
     strcpy(t->ch, "│");
     t->col = col;
 
-    t = &buf.back[ex][i];
+    t = &buf.back[epos.x][i];
     strcpy(t->ch, "│");
     t->col = col;
   }
 }
 
-void drawBoxR(int ox, int oy, int ex, int ey, const Color col) {
-  if(ox < 0) ox = 0;
-  if(oy < 0) oy = 0;
-  if(ex >= WIDTH) ex = WIDTH;
-  if(ey >= HEIGHT) ey = HEIGHT;
+void drawBoxR(Vec2 opos, Vec2 epos, const Color col) {
+  if(opos.x < 0) opos.x = 0;
+  if(opos.y < 0) opos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
 
   Tile* t;
 
-  t = &buf.back[ox][oy];
+  t = &buf.back[opos.x][opos.y];
   strcpy(t->ch, "╭");
   t->col = col;
 
-  t = &buf.back[ex][oy];
+  t = &buf.back[epos.x][opos.y];
   strcpy(t->ch, "╮");
   t->col = col;
 
-  t = &buf.back[ox][ey];
+  t = &buf.back[opos.x][epos.y];
   strcpy(t->ch, "╰");
   t->col = col;
   
-  t = &buf.back[ex][ey];
+  t = &buf.back[epos.x][epos.y];
   strcpy(t->ch, "╯");
   t->col = col;
 
-  for(int i = ox+1; i < ex; i++) {
-    t = &buf.back[i][oy];
+  for(int i = opos.x+1; i < epos.x; i++) {
+    t = &buf.back[i][opos.y];
     strcpy(t->ch, "─");
     t->col = col;
 
-    t = &buf.back[i][ey];
+    t = &buf.back[i][epos.y];
     strcpy(t->ch, "─");
     t->col = col;
   }
 
-  for(int i = oy+1; i < ey; i++) {
-    t = &buf.back[ox][i];
+  for(int i = opos.y+1; i < epos.y; i++) {
+    t = &buf.back[opos.x][i];
     strcpy(t->ch, "│");
     t->col = col;
 
-    t = &buf.back[ex][i];
+    t = &buf.back[epos.x][i];
     strcpy(t->ch, "│");
     t->col = col;
   }
 }
 
-void drawBoxD(int ox, int oy, int ex, int ey, const Color col) {
-  if(ox < 0) ox = 0;
-  if(oy < 0) oy = 0;
-  if(ex >= WIDTH) ex = WIDTH;
-  if(ey >= HEIGHT) ey = HEIGHT;
+void drawBoxD(Vec2 opos, Vec2 epos, const Color col) {
+  if(opos.x < 0) opos.x = 0;
+  if(opos.y < 0) opos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
 
   Tile* t;
 
-  t = &buf.back[ox][oy];
+  t = &buf.back[opos.x][opos.y];
   strcpy(t->ch, "╔");
   t->col = col;
 
-  t = &buf.back[ex][oy];
+  t = &buf.back[epos.x][opos.y];
   strcpy(t->ch, "╗");
   t->col = col;
 
-  t = &buf.back[ox][ey];
+  t = &buf.back[opos.x][epos.y];
   strcpy(t->ch, "╚");
   t->col = col;
   
-  t = &buf.back[ex][ey];
+  t = &buf.back[epos.x][epos.y];
   strcpy(t->ch, "╝");
   t->col = col;
 
-  for(int i = ox+1; i < ex; i++) {
-    t = &buf.back[i][oy];
+  for(int i = opos.x+1; i < epos.x; i++) {
+    t = &buf.back[i][opos.y];
     strcpy(t->ch, "═");
     t->col = col;
 
-    t = &buf.back[i][ey];
+    t = &buf.back[i][epos.y];
     strcpy(t->ch, "═");
     t->col = col;
   }
 
-  for(int i = oy+1; i < ey; i++) {
-    t = &buf.back[ox][i];
+  for(int i = opos.y+1; i < epos.y; i++) {
+    t = &buf.back[opos.x][i];
     strcpy(t->ch, "║");
     t->col = col;
 
-    t = &buf.back[ex][i];
+    t = &buf.back[epos.x][i];
     strcpy(t->ch, "║");
     t->col = col;
   }
 }
 
-void drawBoxTitle(int ox, int oy, int ex, int ey, const Color col, const char* str, const unsigned char type) {
-  if(ox < 0) ox = 0;
-  if(oy < 0) oy = 0;
-  if(ex >= WIDTH) ex = WIDTH;
-  if(ey >= HEIGHT) ey = HEIGHT;
+void drawBoxTitle(Vec2 opos, Vec2 epos, const Color col, const char* str, const unsigned char type) {
+  if(opos.x < 0) opos.x = 0;
+  if(opos.y < 0) opos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
 
   switch (type) {
     case 's':
-      drawBox(ox, oy, ex, ey, col);
+      drawBox(opos, epos, col);
       break;
 
     case 'r':
-      drawBoxR(ox, oy, ex, ey, col);
+      drawBoxR(opos, epos, col);
       break;
 
     case 'd':
-      drawBoxD(ox, oy, ex, ey, col);
+      drawBoxD(opos, epos, col);
       break;
   }
 
   int len = strlen(str);
-  int mx = (ox + ex - len) / 2;
+  int mx = (opos.x + epos.x - len) / 2;
 
-  drawString(mx, oy, str, col);
+  drawString((Vec2){mx, opos.y}, str, col);
 }
 
-void drawBrail(int x, int y, const char* ch, const Color col) {
-  drawChar(x, y, ch, col);
+Matrix* initMatrix(Vec2 size) {
+  Matrix* mat = malloc(sizeof(Matrix));
+  mat->size = size;
+  
+  int bytes = (size.x * size.y + 7) / 8;
+  mat->data = calloc(bytes, sizeof(uint8_t));
+
+  return mat;
 }
 
-void appendToBuf(helperBuf* HB, const char* data) {
+void setBit(Matrix* mat, Vec2 pos, bool val) {
+  if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
+  
+  size_t bitidx = (pos.y * mat->size.x + pos.x);
+
+  if(val) {
+    mat->data[bitidx / 8] |= (1 << (bitidx % 8));
+  } else {
+    mat->data[bitidx / 8] &= ~(1 << (bitidx % 8));
+  }
+}
+
+bool getBit(Matrix* mat, Vec2 pos) {
+  if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
+  
+  size_t bitidx = (pos.y * mat->size.x + pos.x);
+  
+  return (mat->data[bitidx / 8] >> (bitidx % 8)) & 1;
+}
+
+uint8_t getCode(Matrix* mat, size_t idx) {
+  uint8_t code = 0;
+  uint8_t pat = mat->data[idx];
+
+  if(pat & 0x01) code |= 0x01;
+  if(pat & 0x02) code |= 0x08;
+  if(pat & 0x04) code |= 0x02;
+  if(pat & 0x08) code |= 0x10;
+  if(pat & 0x10) code |= 0x04;
+  if(pat & 0x20) code |= 0x20;
+  if(pat & 0x40) code |= 0x40;
+  if(pat & 0x80) code |= 0x80;
+
+  return code;
+}
+
+char* brailCode(const uint8_t code) {
+  setlocale(LC_ALL, "");
+
+  char* temp = malloc(8 * sizeof(char));
+  snprintf(temp, sizeof(temp), "%lc", 0x2800 + code);
+
+  return temp;
+}
+
+void brailFromMatrix(Matrix* mat) {
+  char temp[8];
+}
+
+void appendToBuf(HelperBuf* HB, const char* data) {
   size_t cap = sizeof(HB->data) - HB->len;
   size_t len = strlen(data);
 
@@ -277,7 +345,7 @@ void appendToBuf(helperBuf* HB, const char* data) {
 }
 
 void gridFlush(void) {
-  helperBuf HB = { .len = 0 };
+  HelperBuf HB = { .len = 0 };
   char temp[128];
 
   for(int j = 0; j < HEIGHT; j++) {
@@ -302,6 +370,9 @@ void gridFlush(void) {
   }
 
   if (HB.len > 0) {
+    snprintf(temp, sizeof(temp), "\x1b[%d;%dH", HEIGHT+1, 0);
+    appendToBuf(&HB, temp);
+
     write(STDOUT_FILENO, HB.data, HB.len);
   }
 }
