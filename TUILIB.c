@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
 #include <locale.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <signal.h>
+#include <sys/ioctl.h>
 
-#define WIDTH 80
-#define HEIGHT 24
+int WIDTH = 80;
+int HEIGHT = 24;
 
 typedef struct {
   int x;
@@ -35,21 +37,39 @@ typedef struct {
 } Tile;
 
 typedef struct {
-  Tile front[WIDTH][HEIGHT];
-  Tile back[WIDTH][HEIGHT];
+  Tile* front;
+  Tile* back;
 } ScreenBuffer;
 
 typedef struct {
-  char data[128 * 1024];
+  char data[128 * 4096];
   size_t len;
 } HelperBuf;
 
 static ScreenBuffer buf = {0};
 
+volatile sig_atomic_t g_resized = 1;
+
+void handle_sigwinch(int sig) {
+  (void)sig;
+  g_resized = 1;
+}
+
+void getTerminalSize() {
+  struct winsize ws;
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0) {
+    WIDTH = ws.ws_col;
+    HEIGHT = ws.ws_row;
+  } else {
+    WIDTH = 80;
+    HEIGHT = 24;
+  }
+}
+
 void gridClear(void) {
   for (int i = 0; i < WIDTH; i++) {
     for (int j = 0; j < HEIGHT; j++) {
-      Tile* t = &buf.back[i][j];
+      Tile* t = &buf.back[j * WIDTH + i];
 
       strcpy(t->ch, " ");
       t->col.fg_r = 255; t->col.fg_g = 255; t->col.fg_b = 255;
@@ -59,7 +79,7 @@ void gridClear(void) {
 }
 
 void drawChar(Vec2 pos, const char* ch, const Color col) {
-  Tile* t = &buf.back[pos.x][pos.y];
+  Tile* t = &buf.back[pos.y * WIDTH + pos.x];
 
   if(pos.x < 0 || pos.x >= WIDTH || pos.y < 0 || pos.y >= HEIGHT) return;
 
@@ -126,38 +146,38 @@ void drawBox(Vec2 opos, Vec2 epos, const Color col) {
 
   Tile* t;
 
-  t = &buf.back[opos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + opos.x];
   strcpy(t->ch, "┌");
   t->col = col;
 
-  t = &buf.back[epos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + epos.x];
   strcpy(t->ch, "┐");
   t->col = col;
 
-  t = &buf.back[opos.x][epos.y];
+  t = &buf.back[epos.y * WIDTH + opos.x];
   strcpy(t->ch, "└");
   t->col = col;
-  
-  t = &buf.back[epos.x][epos.y];
+
+  t = &buf.back[epos.y * WIDTH + epos.x];
   strcpy(t->ch, "┘");
   t->col = col;
 
   for(int i = opos.x+1; i < epos.x; i++) {
-    t = &buf.back[i][opos.y];
+    t = &buf.back[opos.y * WIDTH + i];
     strcpy(t->ch, "─");
     t->col = col;
 
-    t = &buf.back[i][epos.y];
+    t = &buf.back[epos.y * WIDTH + i];
     strcpy(t->ch, "─");
     t->col = col;
   }
 
   for(int i = opos.y+1; i < epos.y; i++) {
-    t = &buf.back[opos.x][i];
+    t = &buf.back[i * WIDTH + opos.x];
     strcpy(t->ch, "│");
     t->col = col;
 
-    t = &buf.back[epos.x][i];
+    t = &buf.back[i * WIDTH + epos.x];
     strcpy(t->ch, "│");
     t->col = col;
   }
@@ -171,38 +191,38 @@ void drawBoxR(Vec2 opos, Vec2 epos, const Color col) {
 
   Tile* t;
 
-  t = &buf.back[opos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + opos.x];
   strcpy(t->ch, "╭");
   t->col = col;
 
-  t = &buf.back[epos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + epos.x];
   strcpy(t->ch, "╮");
   t->col = col;
 
-  t = &buf.back[opos.x][epos.y];
+  t = &buf.back[epos.y * WIDTH + opos.x];
   strcpy(t->ch, "╰");
   t->col = col;
-  
-  t = &buf.back[epos.x][epos.y];
+
+  t = &buf.back[epos.y * WIDTH + epos.x];
   strcpy(t->ch, "╯");
   t->col = col;
 
   for(int i = opos.x+1; i < epos.x; i++) {
-    t = &buf.back[i][opos.y];
+    t = &buf.back[opos.y * WIDTH + i];
     strcpy(t->ch, "─");
     t->col = col;
 
-    t = &buf.back[i][epos.y];
+    t = &buf.back[epos.y * WIDTH + i];
     strcpy(t->ch, "─");
     t->col = col;
   }
 
   for(int i = opos.y+1; i < epos.y; i++) {
-    t = &buf.back[opos.x][i];
+    t = &buf.back[i * WIDTH + opos.x];
     strcpy(t->ch, "│");
     t->col = col;
 
-    t = &buf.back[epos.x][i];
+    t = &buf.back[i * WIDTH + epos.x];
     strcpy(t->ch, "│");
     t->col = col;
   }
@@ -216,38 +236,38 @@ void drawBoxD(Vec2 opos, Vec2 epos, const Color col) {
 
   Tile* t;
 
-  t = &buf.back[opos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + opos.x];
   strcpy(t->ch, "╔");
   t->col = col;
 
-  t = &buf.back[epos.x][opos.y];
+  t = &buf.back[opos.y * WIDTH + epos.x];
   strcpy(t->ch, "╗");
   t->col = col;
 
-  t = &buf.back[opos.x][epos.y];
+  t = &buf.back[epos.y * WIDTH + opos.x];
   strcpy(t->ch, "╚");
   t->col = col;
-  
-  t = &buf.back[epos.x][epos.y];
+
+  t = &buf.back[epos.y * WIDTH + epos.x];
   strcpy(t->ch, "╝");
   t->col = col;
 
   for(int i = opos.x+1; i < epos.x; i++) {
-    t = &buf.back[i][opos.y];
+    t = &buf.back[opos.y * WIDTH + i];
     strcpy(t->ch, "═");
     t->col = col;
 
-    t = &buf.back[i][epos.y];
+    t = &buf.back[epos.y * WIDTH + i];
     strcpy(t->ch, "═");
     t->col = col;
   }
 
   for(int i = opos.y+1; i < epos.y; i++) {
-    t = &buf.back[opos.x][i];
+    t = &buf.back[i * WIDTH + opos.x];
     strcpy(t->ch, "║");
     t->col = col;
 
-    t = &buf.back[epos.x][i];
+    t = &buf.back[i * WIDTH + epos.x];
     strcpy(t->ch, "║");
     t->col = col;
   }
@@ -282,7 +302,7 @@ void drawBoxTitle(Vec2 opos, Vec2 epos, const Color col, const char* str, const 
 Matrix* initMatrix(Vec2 size) {
   Matrix* mat = malloc(sizeof(Matrix));
   mat->size = size;
-  
+
   uint8_t bytes = (size.x / 2) * (size.y / 4);
   mat->data = calloc(bytes, sizeof(uint8_t));
 
@@ -291,9 +311,9 @@ Matrix* initMatrix(Vec2 size) {
 
 void setBit(const Matrix* mat, Vec2 pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
-  
+
   size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
-  
+
   if(val) {
     mat->data[idx] |= (1 << ((pos.y % 4) * 2 + (pos.x % 2)));
   } else {
@@ -305,7 +325,7 @@ bool getBit(const Matrix* mat, Vec2 pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
 
   uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
-  
+
   return cell >> ((pos.y % 4) * 2 + (pos.x % 2)) & 1;
 }
 
@@ -325,22 +345,23 @@ uint8_t getCode(const Matrix* mat, size_t idx) {
   return code;
 }
 
-char* brailCode(const uint8_t code) {
-  setlocale(LC_ALL, "");
-
-  char* temp = malloc(8 * sizeof(char));
-  snprintf(temp, sizeof(temp), "%lc", 0x2800 + code);
-
-  return temp;
+void brailCode(uint8_t code, char out[4]) {
+  uint32_t codepoint = 0x2800 + code;
+  out[0] = (char)(0xE0 | ((codepoint >> 12) & 0x0F));
+  out[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+  out[2] = (char)(0x80 | (codepoint & 0x3F));
+  out[3] = '\0';
 }
 
 void drawBrail(const Matrix* mat, Vec2 pos, const Color col) {
   Vec2 gridPos = {0, 0};
+  char ch[4];
   for(size_t i = 0; i < (mat->size.x / 2) * (mat->size.y / 4); i++) { 
     gridPos.x = i % (mat->size.x / 2);
     gridPos.y = i / (mat->size.x / 2);
- 
-    drawChar(add(pos, gridPos), brailCode(getCode(mat, i)), col);
+
+    brailCode(getCode(mat, i), ch);
+    drawChar(add(pos, gridPos), ch, col);
   }
 }
 
@@ -354,14 +375,14 @@ void appendToBuf(HelperBuf* HB, const char* data) {
   HB->len += len;
 }
 
-void gridFlush(void) {
+void gridFlush() {
   HelperBuf HB = { .len = 0 };
   char temp[128];
 
   for(int j = 0; j < HEIGHT; j++) {
     for(int i = 0; i < WIDTH; i++) {
-      Tile* front = &buf.front[i][j];
-      Tile* back = &buf.back[i][j];
+      Tile* front = &buf.front[j * WIDTH + i];
+      Tile* back = &buf.back[j * WIDTH + i];
 
       if (memcmp(back, front, sizeof(Tile)) != 0) {
         snprintf(temp, sizeof(temp), "\x1b[%d;%dH", j+1, i+1);
@@ -387,4 +408,43 @@ void gridFlush(void) {
   }
 }
 
+struct sigaction sa;
 
+void initLib(void) {
+  sa.sa_handler = handle_sigwinch;
+  sa.sa_flags = SA_RESTART;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGWINCH, &sa, NULL);
+
+  getTerminalSize();
+
+  buf.front = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
+  buf.back = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
+
+  memset(buf.front, 0, sizeof(Tile) * (WIDTH * HEIGHT));
+  gridClear();
+}
+
+void closeLib(void) {
+  free(buf.front);
+  free(buf.back);
+}
+
+void updateFrame(void) {
+  if (g_resized) {
+    g_resized = 0;
+
+    getTerminalSize();
+
+    buf.front = realloc(buf.front, sizeof(Tile) * (WIDTH * HEIGHT));
+    buf.back = realloc(buf.back, sizeof(Tile) * (WIDTH * HEIGHT));
+
+    memset(buf.front, 0, sizeof(Tile) * (WIDTH * HEIGHT));
+    gridClear();
+
+    printf("\033[2J\033[H"); 
+  }
+
+  gridFlush();
+  gridClear();
+}
