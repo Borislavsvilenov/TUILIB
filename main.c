@@ -5,19 +5,27 @@
 int main(void) {
     printf("\x1b[2J\x1b[?25l"); 
 
-    Matrix* mat = initMatrix((Vec2){4, 4});
+    Matrix* mat = initMatrix((Vec2){4, 8});
 
     setBit(mat, (Vec2){0, 0}, 1);
     setBit(mat, (Vec2){1, 1}, 1);
     setBit(mat, (Vec2){0, 2}, 1);
     setBit(mat, (Vec2){1, 3}, 1);
 
-    /*
     setBit(mat, (Vec2){3, 0}, 1);
     setBit(mat, (Vec2){2, 1}, 1);
     setBit(mat, (Vec2){3, 2}, 1);
     setBit(mat, (Vec2){2, 3}, 1);
-    */
+
+    setBit(mat, (Vec2){0, 4}, 1);
+    setBit(mat, (Vec2){1, 5}, 1);
+    setBit(mat, (Vec2){0, 6}, 1);
+    setBit(mat, (Vec2){1, 7}, 1);
+
+    setBit(mat, (Vec2){3, 4}, 1);
+    setBit(mat, (Vec2){2, 5}, 1);
+    setBit(mat, (Vec2){3, 6}, 1);
+    setBit(mat, (Vec2){2, 7}, 1);
     
     while (1) {
         gridClear();
@@ -37,6 +45,8 @@ int main(void) {
 
         drawChar((Vec2){17, 2}, brailCode(getCode(mat, 0)), (Color){255, 0, 0, 0, 0, 0});
         drawChar((Vec2){18, 2}, brailCode(getCode(mat, 1)), (Color){255, 0, 0, 0, 0, 0});
+        drawChar((Vec2){17, 3}, brailCode(getCode(mat, 2)), (Color){255, 0, 0, 0, 0, 0});
+        drawChar((Vec2){18, 3}, brailCode(getCode(mat, 3)), (Color){255, 0, 0, 0, 0, 0});
 
         drawBoxTitle((Vec2){0, 0}, (Vec2){79, 23}, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
 

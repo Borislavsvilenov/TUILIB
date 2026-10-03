@@ -279,7 +279,7 @@ Matrix* initMatrix(Vec2 size) {
   Matrix* mat = malloc(sizeof(Matrix));
   mat->size = size;
   
-  int bytes = (size.x * size.y + 7) / 8;
+  uint8_t bytes = (size.x / 2) * (size.y / 4);
   mat->data = calloc(bytes, sizeof(uint8_t));
 
   return mat;
@@ -288,21 +288,21 @@ Matrix* initMatrix(Vec2 size) {
 void setBit(Matrix* mat, Vec2 pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
   
-  size_t bitidx = (pos.y * mat->size.x + pos.x);
-
+  size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
+  
   if(val) {
-    mat->data[bitidx / 8] |= (1 << (bitidx % 8));
+    mat->data[idx] |= (1 << ((pos.y % 4) * 2 + (pos.x % 2)));
   } else {
-    mat->data[bitidx / 8] &= ~(1 << (bitidx % 8));
+    mat->data[idx] &= ~(1 << ((pos.y % 4) * 2 + (pos.x % 2)));
   }
 }
 
 bool getBit(Matrix* mat, Vec2 pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
+
+  uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
   
-  size_t bitidx = (pos.y * mat->size.x + pos.x);
-  
-  return (mat->data[bitidx / 8] >> (bitidx % 8)) & 1;
+  return cell >> ((pos.y % 4) * 2 + (pos.x % 2)) & 1;
 }
 
 uint8_t getCode(Matrix* mat, size_t idx) {
@@ -328,10 +328,6 @@ char* brailCode(const uint8_t code) {
   snprintf(temp, sizeof(temp), "%lc", 0x2800 + code);
 
   return temp;
-}
-
-void brailFromMatrix(Matrix* mat) {
-  char temp[8];
 }
 
 void appendToBuf(HelperBuf* HB, const char* data) {
