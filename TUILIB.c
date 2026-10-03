@@ -15,6 +15,10 @@ typedef struct {
   int y;
 } Vec2;
 
+Vec2 add(Vec2 a, Vec2 b) {
+  return (Vec2){a.x + b.x, a.y + b.y};
+}
+
 typedef struct {
   Vec2 size;
   uint8_t* data;
@@ -285,7 +289,7 @@ Matrix* initMatrix(Vec2 size) {
   return mat;
 }
 
-void setBit(Matrix* mat, Vec2 pos, bool val) {
+void setBit(const Matrix* mat, Vec2 pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
   
   size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
@@ -297,7 +301,7 @@ void setBit(Matrix* mat, Vec2 pos, bool val) {
   }
 }
 
-bool getBit(Matrix* mat, Vec2 pos) {
+bool getBit(const Matrix* mat, Vec2 pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
 
   uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
@@ -305,7 +309,7 @@ bool getBit(Matrix* mat, Vec2 pos) {
   return cell >> ((pos.y % 4) * 2 + (pos.x % 2)) & 1;
 }
 
-uint8_t getCode(Matrix* mat, size_t idx) {
+uint8_t getCode(const Matrix* mat, size_t idx) {
   uint8_t code = 0;
   uint8_t pat = mat->data[idx];
 
@@ -328,6 +332,16 @@ char* brailCode(const uint8_t code) {
   snprintf(temp, sizeof(temp), "%lc", 0x2800 + code);
 
   return temp;
+}
+
+void drawBrail(const Matrix* mat, Vec2 pos, const Color col) {
+  Vec2 gridPos = {0, 0};
+  for(size_t i = 0; i < (mat->size.x / 2) * (mat->size.y / 4); i++) { 
+    gridPos.x = i % (mat->size.x / 2);
+    gridPos.y = i / (mat->size.x / 2);
+ 
+    drawChar(add(pos, gridPos), brailCode(getCode(mat, i)), col);
+  }
 }
 
 void appendToBuf(HelperBuf* HB, const char* data) {

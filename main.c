@@ -43,10 +43,7 @@ int main(void) {
         drawTriangleDown((Vec2){13, 2}, (Color){0, 255, 0, 255, 0, 0});
         drawDiamond((Vec2){15, 2}, (Color){0, 255, 0, 0, 0, 0});
 
-        drawChar((Vec2){17, 2}, brailCode(getCode(mat, 0)), (Color){255, 0, 0, 0, 0, 0});
-        drawChar((Vec2){18, 2}, brailCode(getCode(mat, 1)), (Color){255, 0, 0, 0, 0, 0});
-        drawChar((Vec2){17, 3}, brailCode(getCode(mat, 2)), (Color){255, 0, 0, 0, 0, 0});
-        drawChar((Vec2){18, 3}, brailCode(getCode(mat, 3)), (Color){255, 0, 0, 0, 0, 0});
+        drawBrail(mat, (Vec2){17, 2}, (Color){0, 0, 255, 0, 0, 0});
 
         drawBoxTitle((Vec2){0, 0}, (Vec2){79, 23}, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
 
