@@ -6,6 +6,8 @@ int main(void) {
   printf("\x1b[2J\x1b[?25l"); 
 
   initLib();
+  enableRawMode();
+  int running = 1;
 
   Matrix* mat = initMatrix((Vec2){4, 8});
 
@@ -29,7 +31,19 @@ int main(void) {
   setBit(mat, (Vec2){3, 6}, 1);
   setBit(mat, (Vec2){2, 7}, 1);
 
-  while (1) {
+  while (running) {
+    int key = readKey();
+
+    switch (key) {
+      case 'q':
+      case 'Q':
+      case KEY_ESC:
+        running = 0;
+        break;
+ 
+      default:
+        break;
+    }
 
     drawString((Vec2){2, 1}, "TUILIB test", (Color){255, 255, 0, 0, 0, 0});
 
@@ -52,7 +66,7 @@ int main(void) {
 
     usleep(16666);
   }
-  
+
   free(mat);
 
   closeLib();

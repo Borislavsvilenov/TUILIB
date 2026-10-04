@@ -46,6 +46,18 @@ typedef struct {
   size_t len;
 } HelperBuf;
 
+enum KeyCode {
+  KEY_NONE = 0,
+  KEY_ESC = 27,
+  KEY_ARROW_UP = 1000,
+  KEY_ARROW_DOWN,
+  KEY_ARROW_RIGHT,
+  KEY_ARROW_LEFT,
+  KEY_HOME,
+  KEY_END,
+  KEY_DELETE
+};
+
 static ScreenBuffer buf = {0};
 
 volatile sig_atomic_t g_resized = 1;
@@ -64,6 +76,75 @@ void getTerminalSize() {
     WIDTH = 80;
     HEIGHT = 24;
   }
+}
+
+static struct termios orig_termios;
+
+void disableRawMode(void) {
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+void enableRawMode(void) {
+  tcgetattr(STDIN_FILENO, &orig_termios);
+  atexit(disableRawMode);
+
+  struct termios raw = orig_termios;
+
+  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag &= ~(OPOST);
+  raw.c_cflag |= (CS8);
+  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+
+  raw.c_cc[VMIN] = 0; 
+  raw.c_cc[VTIME] = 1; 
+
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+
+int readKey(void) {
+  char c;
+  ssize_t nread = read(STDIN_FILENO, &c, 1);
+  if (nread <= 0) return KEY_NONE;
+
+  if (c == '\x1b') {
+    char seq[3];
+
+    if (read(STDIN_FILENO, &seq[0], 1) <= 0) return KEY_ESC;
+    if (read(STDIN_FILENO, &seq[1], 1) <= 0) return KEY_ESC;
+
+    if (seq[0] == '[') {
+      if (seq[1] >= '0' && seq[1] <= '9') {
+        if (read(STDIN_FILENO, &seq[2], 1) <= 0) return KEY_ESC;
+        if (seq[2] == '~') {
+          switch (seq[1]) {
+            case '3': return KEY_DELETE;
+          }
+        }
+      } else {
+        switch (seq[1]) {
+          case 'A': return KEY_ARROW_UP;
+          case 'B': return KEY_ARROW_DOWN;
+          case 'C': return KEY_ARROW_RIGHT;
+          case 'D': return KEY_ARROW_LEFT;
+          case 'H': return KEY_HOME;
+          case 'F': return KEY_END;
+        }
+      }
+    }
+    return KEY_ESC;
+  }
+
+  return (unsigned char)c;
+}
+
+void enableMouse(void) {
+    printf("\x1b[?1000h\x1b[?1006h");
+    fflush(stdout);
+}
+
+void disableMouse(void) {
+    printf("\x1b[?1000l\x1b[?1006l");
+    fflush(stdout);
 }
 
 void gridClear(void) {
