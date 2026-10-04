@@ -1,3 +1,5 @@
+#include "TUILIB.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -5,62 +7,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
-#include <locale.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 
 int WIDTH = 80;
 int HEIGHT = 24;
-
-typedef struct {
-  int x;
-  int y;
-} Vec2;
-
-Vec2 add(Vec2 a, Vec2 b) {
-  return (Vec2){a.x + b.x, a.y + b.y};
-}
-
-typedef struct {
-  Vec2 size;
-  uint8_t* data;
-} Matrix;
-
-typedef struct {
-  unsigned char fg_r, fg_g, fg_b;
-  unsigned char bg_r, bg_g, bg_b;
-} Color;
-
-typedef struct {
-  char ch[4];
-  Color col;
-} Tile;
-
-typedef struct {
-  Tile* front;
-  Tile* back;
-} ScreenBuffer;
-
-typedef struct {
-  char data[128 * 4096];
-  size_t len;
-} HelperBuf;
-
-enum KeyCode {
-  KEY_NONE = 0,
-  KEY_ESC = 27,
-  KEY_ARROW_UP = 1000,
-  KEY_ARROW_DOWN,
-  KEY_ARROW_RIGHT,
-  KEY_ARROW_LEFT,
-  KEY_HOME,
-  KEY_END,
-  KEY_DELETE
-};
-
-static ScreenBuffer buf = {0};
-
-volatile sig_atomic_t g_resized = 1;
+size_t FRAMECOUNT = 0;
+volatile sig_atomic_t g_resized = 0;
+struct termios orig_termios;
+struct sigaction sa;
+DoubleBuffer buf;
+ElementBuffer elementBuf;
 
 void handle_sigwinch(int sig) {
   (void)sig;
@@ -77,8 +34,6 @@ void getTerminalSize() {
     HEIGHT = 24;
   }
 }
-
-static struct termios orig_termios;
 
 void disableRawMode(void) {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
@@ -153,13 +108,13 @@ void gridClear(void) {
       Tile* t = &buf.back[j * WIDTH + i];
 
       strcpy(t->ch, " ");
-      t->col.fg_r = 255; t->col.fg_g = 255; t->col.fg_b = 255;
+      t->col.fg_r = 0; t->col.fg_g = 0; t->col.fg_b = 0;
       t->col.bg_r = 0; t->col.bg_g = 0; t->col.bg_b = 0;
     }
   }
 }
 
-void drawChar(Vec2 pos, const char* ch, const Color col) {
+void drawChar(Vec2i pos, const char* ch, const Color col) {
   Tile* t = &buf.back[pos.y * WIDTH + pos.x];
 
   if(pos.x < 0 || pos.x >= WIDTH || pos.y < 0 || pos.y >= HEIGHT) return;
@@ -169,57 +124,57 @@ void drawChar(Vec2 pos, const char* ch, const Color col) {
   t->col = col;
 }
 
-void drawFullBlock(Vec2 pos, const Color col) {
+inline void drawFullBlock(Vec2i pos, const Color col) {
   drawChar(pos, "█", col);
 }
 
-void drawTopBlock(Vec2 pos, const Color col) {
+inline void drawTopBlock(Vec2i pos, const Color col) {
   drawChar(pos, "▀", col);
 }
 
-void drawBottomBlock(Vec2 pos, const Color col) {
+inline void drawBottomBlock(Vec2i pos, const Color col) {
   drawChar(pos, "▄", col);
 }
 
-void drawLeftBlock(Vec2 pos, const Color col) {
+inline void drawLeftBlock(Vec2i pos, const Color col) {
   drawChar(pos, "▌", col);
 }
 
-void drawRightBlock(Vec2 pos, const Color col) {
+inline void drawRightBlock(Vec2i pos, const Color col) {
   drawChar(pos, "▐", col);
 }
 
-void drawSquare(Vec2 pos, const Color col) {
+inline void drawSquare(Vec2i pos, const Color col) {
   drawChar(pos, "■", col);
 }
 
-void drawCircle(Vec2 pos, const Color col) {
+inline void drawCircle(Vec2i pos, const Color col) {
   drawChar(pos, "●", col);
 }
 
-void drawTriangleUp(Vec2 pos, const Color col) {
+inline void drawTriangleUp(Vec2i pos, const Color col) {
   drawChar(pos, "▲", col);
 }
 
-void drawTriangleDown(Vec2 pos, const Color col) {
+inline void drawTriangleDown(Vec2i pos, const Color col) {
   drawChar(pos, "▼", col);
 }
 
-void drawDiamond(Vec2 pos, const Color col) {
+inline void drawDiamond(Vec2i pos, const Color col) {
   drawChar(pos, "◆", col);
 }
 
-void drawString(Vec2 pos, const char* str, const Color col) {
+void drawString(Vec2i pos, const char* str, const Color col) {
   int curr_x = pos.x;
   while( *str && curr_x < WIDTH ) {
     char ch_buf[2] = { *str, '\0' };
-    drawChar((Vec2){curr_x, pos.y}, ch_buf, col);
+    drawChar((Vec2i){curr_x, pos.y}, ch_buf, col);
     curr_x++;
     str++;
   }
 }
 
-void drawBox(Vec2 opos, Vec2 epos, const Color col) {
+void drawBox(Vec2i opos, Vec2i epos, const Color col) {
   if(opos.x < 0) opos.x = 0;
   if(opos.y < 0) opos.y = 0;
   if(epos.x >= WIDTH) epos.x = WIDTH;
@@ -264,7 +219,7 @@ void drawBox(Vec2 opos, Vec2 epos, const Color col) {
   }
 }
 
-void drawBoxR(Vec2 opos, Vec2 epos, const Color col) {
+void drawBoxR(Vec2i opos, Vec2i epos, const Color col) {
   if(opos.x < 0) opos.x = 0;
   if(opos.y < 0) opos.y = 0;
   if(epos.x >= WIDTH) epos.x = WIDTH;
@@ -309,7 +264,7 @@ void drawBoxR(Vec2 opos, Vec2 epos, const Color col) {
   }
 }
 
-void drawBoxD(Vec2 opos, Vec2 epos, const Color col) {
+void drawBoxD(Vec2i opos, Vec2i epos, const Color col) {
   if(opos.x < 0) opos.x = 0;
   if(opos.y < 0) opos.y = 0;
   if(epos.x >= WIDTH) epos.x = WIDTH;
@@ -354,7 +309,7 @@ void drawBoxD(Vec2 opos, Vec2 epos, const Color col) {
   }
 }
 
-void drawBoxTitle(Vec2 opos, Vec2 epos, const Color col, const char* str, const unsigned char type) {
+void drawBoxTitle(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type) {
   if(opos.x < 0) opos.x = 0;
   if(opos.y < 0) opos.y = 0;
   if(epos.x >= WIDTH) epos.x = WIDTH;
@@ -375,12 +330,39 @@ void drawBoxTitle(Vec2 opos, Vec2 epos, const Color col, const char* str, const 
   }
 
   int len = strlen(str);
-  int mx = (opos.x + epos.x - len) / 2;
+  int mx = (opos.x + epos.x - len + 1) / 2;
 
-  drawString((Vec2){mx, opos.y}, str, col);
+  drawString((Vec2i){mx, opos.y}, str, col);
 }
 
-Matrix* initMatrix(Vec2 size) {
+void drawBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type) {
+  if(opos.x < 0) opos.x = 0;
+  if(opos.y < 0) opos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
+
+  switch (type) {
+    case 's':
+      drawBox(opos, epos, col);
+      break;
+
+    case 'r':
+      drawBoxR(opos, epos, col);
+      break;
+
+    case 'd':
+      drawBoxD(opos, epos, col);
+      break;
+  }
+
+  int len = strlen(str);
+  int mx = (opos.x + epos.x - len + 1) / 2;
+  int my = (opos.y + epos.y) / 2;
+
+  drawString((Vec2i){mx, my}, str, col);
+}
+
+Matrix* initMatrix(Vec2i size) {
   Matrix* mat = malloc(sizeof(Matrix));
   mat->size = size;
 
@@ -390,7 +372,7 @@ Matrix* initMatrix(Vec2 size) {
   return mat;
 }
 
-void setBit(const Matrix* mat, Vec2 pos, bool val) {
+void setBit(const Matrix* mat, Vec2i pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
 
   size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
@@ -402,7 +384,7 @@ void setBit(const Matrix* mat, Vec2 pos, bool val) {
   }
 }
 
-bool getBit(const Matrix* mat, Vec2 pos) {
+bool getBit(const Matrix* mat, Vec2i pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
 
   uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
@@ -434,15 +416,21 @@ void brailCode(uint8_t code, char out[4]) {
   out[3] = '\0';
 }
 
-void drawBrail(const Matrix* mat, Vec2 pos, const Color col) {
-  Vec2 gridPos = {0, 0};
+void drawBrail(const Matrix* mat, Vec2i pos, const Color col) {
+  Vec2i gridPos = {0, 0};
   char ch[4];
   for(size_t i = 0; i < (mat->size.x / 2) * (mat->size.y / 4); i++) { 
     gridPos.x = i % (mat->size.x / 2);
     gridPos.y = i / (mat->size.x / 2);
 
     brailCode(getCode(mat, i), ch);
-    drawChar(add(pos, gridPos), ch, col);
+    drawChar(vec2i_add(pos, gridPos), ch, col);
+  }
+}
+
+void createTB(Vec2i pos, Vec2i size, const char* str, const Color col) {
+  if(elementBuf.TB_COUNT == 0) {
+
   }
 }
 
@@ -489,11 +477,10 @@ void gridFlush() {
   }
 }
 
-struct sigaction sa;
-
 void initLib(void) {
   sa.sa_handler = handle_sigwinch;
   sa.sa_flags = SA_RESTART;
+
   sigemptyset(&sa.sa_mask);
   sigaction(SIGWINCH, &sa, NULL);
 
@@ -502,6 +489,8 @@ void initLib(void) {
   buf.front = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
   buf.back = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
 
+  elementBuf.TB_COUNT = 0;
+
   memset(buf.front, 0, sizeof(Tile) * (WIDTH * HEIGHT));
   gridClear();
 }
@@ -509,6 +498,10 @@ void initLib(void) {
 void closeLib(void) {
   free(buf.front);
   free(buf.back);
+
+  if(elementBuf.TB_COUNT>0) {
+    free(elementBuf.TB);
+  }
 }
 
 void updateFrame(void) {
@@ -527,5 +520,6 @@ void updateFrame(void) {
   }
 
   gridFlush();
-  gridClear();
+
+  FRAMECOUNT++;
 }
