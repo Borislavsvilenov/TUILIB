@@ -10,8 +10,8 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 
-int WIDTH = 80;
-int HEIGHT = 24;
+int WIDTH = 100;
+int HEIGHT = 30;
 size_t FRAMECOUNT = 0;
 volatile sig_atomic_t g_resized = 0;
 struct termios orig_termios;
@@ -30,8 +30,8 @@ void getTerminalSize() {
     WIDTH = ws.ws_col;
     HEIGHT = ws.ws_row;
   } else {
-    WIDTH = 80;
-    HEIGHT = 24;
+    WIDTH = 100;
+    HEIGHT = 30;
   }
 }
 

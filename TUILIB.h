@@ -62,7 +62,7 @@ extern "C" {
   } ElementBuffer;
 
   typedef struct {
-    char data[65536];
+    char data[128 * 4096];
     size_t len;
   } HelperBuf;
 

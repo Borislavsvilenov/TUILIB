@@ -40,10 +40,10 @@ static inline float vec2_dot(Vec2 a, Vec2 b) { return a.x * b.x + a.y * b.y; }
 static inline float vec2_cross(Vec2 a, Vec2 b) { return a.x * b.y - a.y * b.x; }
 
 static inline float vec2_mag_sq(Vec2 a) { return a.x * a.x + a.y * a.y; }
-static inline float vec2_mag(Vec2 a) { return sqrt(vec2_mag_sq(a)); }
+static inline float vec2_mag(Vec2 a) { return sqrtf(vec2_mag_sq(a)); }
 
 static inline float vec2_dist_sq(Vec2 a, Vec2 b) { return vec2_mag_sq(vec2_sub(b, a)); }
-static inline float vec2_dist(Vec2 a, Vec2 b) { return sqrt(vec2_dist_sq(a, b)); }
+static inline float vec2_dist(Vec2 a, Vec2 b) { return sqrtf(vec2_dist_sq(a, b)); }
 
 static inline Vec2 vec2_norm(Vec2 a) {
     float m = vec2_mag(a);
@@ -56,8 +56,8 @@ static inline Vec2 vec2_lerp(Vec2 a, Vec2 b, float t) {
 }
 
 static inline Vec2 vec2_rotate(Vec2 v, float angle_rad) {
-    float c = cos(angle_rad);
-    float s = sin(angle_rad);
+    float c = cosf(angle_rad);
+    float s = sinf(angle_rad);
     return (Vec2){v.x * c - v.y * s, v.x * s + v.y * c};
 }
 
@@ -67,7 +67,7 @@ static inline Vec2 vec2_reflect(Vec2 v, Vec2 n) {
 }
 
 static inline bool vec2_equals(Vec2 a, Vec2 b, float epsilon) {
-    return fabs(a.x - b.x) <= epsilon && fabs(a.y - b.y) <= epsilon;
+    return fabsf(a.x - b.x) <= epsilon && fabsf(a.y - b.y) <= epsilon;
 }
 
 // ============================================================================
@@ -79,10 +79,10 @@ static inline Vec2i vec2i_sub(Vec2i a, Vec2i b) { return (Vec2i){a.x - b.x, a.y 
 static inline Vec2i vec2i_neg(Vec2i a) { return (Vec2i){-a.x, -a.y}; }
 
 static inline float vec2i_mag_sq(Vec2i a) { return (float)(a.x * a.x + a.y * a.y); }
-static inline float vec2i_mag(Vec2i a) { return sqrt(vec2i_mag_sq(a)); }
+static inline float vec2i_mag(Vec2i a) { return sqrtf(vec2i_mag_sq(a)); }
 
 static inline float vec2i_dist_sq(Vec2i a, Vec2i b) { return vec2i_mag_sq(vec2i_sub(b, a)); }
-static inline float vec2i_dist(Vec2i a, Vec2i b) { return sqrt(vec2i_dist_sq(a, b)); }
+static inline float vec2i_dist(Vec2i a, Vec2i b) { return sqrtf(vec2i_dist_sq(a, b)); }
 
 #ifdef __cplusplus
 }
