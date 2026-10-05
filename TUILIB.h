@@ -8,6 +8,7 @@
 #include <termios.h>
 
 #include "Vec2.h"
+#include "DynamicArray.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,8 +58,7 @@ extern "C" {
   } TextBox;
 
   typedef struct {
-    TextBox* TB;
-    size_t TB_COUNT;
+    DynamicArray TB;
   } ElementBuffer;
 
   typedef struct {
@@ -134,13 +134,8 @@ extern "C" {
   void brailCode(uint8_t code, char out[4]);
   void drawBrail(const Matrix* mat, Vec2i pos, const Color col);
 
-  // ============================================================================
-  // UI Component Creation
-  // ============================================================================
-  void createTB(Vec2i pos, Vec2i size, const char* str, const Color col);
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif // TUILIB_H
+#endif

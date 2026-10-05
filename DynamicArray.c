@@ -1,17 +1,6 @@
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
+#include "DynamicArray.h"
 
-#define BASE_LEN 5
-
-typedef struct {
-  void* data;
-  size_t itemSize;
-  size_t size;
-  size_t cap;
-} DynamicArray;
-
-bool initDArray(DynamicArray* DA, size_t IS) {
+bool da_init(DynamicArray* DA, size_t IS) {
   DA->data = malloc(IS * BASE_LEN);
 
   if(DA->data == NULL) return false;

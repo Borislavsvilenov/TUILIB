@@ -428,12 +428,6 @@ void drawBrail(const Matrix* mat, Vec2i pos, const Color col) {
   }
 }
 
-void createTB(Vec2i pos, Vec2i size, const char* str, const Color col) {
-  if(elementBuf.TB_COUNT == 0) {
-
-  }
-}
-
 void appendToBuf(HelperBuf* HB, const char* data) {
   size_t cap = sizeof(HB->data) - HB->len;
   size_t len = strlen(data);
@@ -489,7 +483,7 @@ void initLib(void) {
   buf.front = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
   buf.back = malloc(sizeof(Tile) * (WIDTH * HEIGHT));
 
-  elementBuf.TB_COUNT = 0;
+  da_init(&elementBuf.TB, sizeof(TextBox));
 
   memset(buf.front, 0, sizeof(Tile) * (WIDTH * HEIGHT));
   gridClear();
@@ -499,9 +493,7 @@ void closeLib(void) {
   free(buf.front);
   free(buf.back);
 
-  if(elementBuf.TB_COUNT>0) {
-    free(elementBuf.TB);
-  }
+  da_free(&elementBuf.TB);
 }
 
 void updateFrame(void) {
