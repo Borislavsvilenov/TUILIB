@@ -362,6 +362,20 @@ void drawBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const
   drawString((Vec2i){mx, my}, str, col);
 }
 
+bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type) {
+  TextBox box = {
+    .pos = opos,
+    .size = epos,
+    .type = type,
+    .col = col
+  };
+
+  box.text = malloc(strlen(str));
+  strcpy(box.text, str);
+
+  return da_push(&elementBuf.TB, &box);
+}
+
 Matrix* initMatrix(Vec2i size) {
   Matrix* mat = malloc(sizeof(Matrix));
   mat->size = size;
@@ -509,6 +523,12 @@ void updateFrame(void) {
     gridClear();
 
     printf("\033[2J\033[H"); 
+  }
+
+  for(int i = 0; i < elementBuf.TB.size; i++) {
+    TextBox* box = da_get(&elementBuf.TB, i);
+
+    drawBoxText(box->pos, box->size, box->col, box->text, box->type);
   }
 
   gridFlush();

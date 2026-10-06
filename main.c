@@ -35,6 +35,8 @@ int main(void) {
   setBit(mat, (Vec2i){3, 6}, 1);
   setBit(mat, (Vec2i){2, 7}, 1);
 
+  addBoxText((Vec2i){1, 6}, (Vec2i){8, 8}, (Color){0, 255, 0, 0, 0, 0}, "TEXT", 'd');
+
   while (running) {
     int key = readKey();
 
@@ -66,7 +68,6 @@ int main(void) {
 
     drawBoxTitle((Vec2i){0, 0}, (Vec2i){WIDTH-1, HEIGHT-1}, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
 
-    drawBoxText((Vec2i){1, 6}, (Vec2i){8, 8}, (Color){0, 255, 0, 0, 0, 0}, "TEXT", 'd');
 
     updateFrame();
 

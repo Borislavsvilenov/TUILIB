@@ -53,8 +53,9 @@ extern "C" {
   typedef struct {
     Vec2i pos;
     Vec2i size;
-    char* text;
     Color col;
+    unsigned char type;
+    char* text;
   } TextBox;
 
   typedef struct {
@@ -123,6 +124,7 @@ extern "C" {
   void drawBoxD(Vec2i opos, Vec2i epos, const Color col);
   void drawBoxTitle(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
   void drawBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
+  bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
 
   // ============================================================================
   // Braille & Matrix Functions
