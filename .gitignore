@@ -56,3 +56,5 @@ dkms.conf
 
 *.s
 .DS_Store
+
+result
