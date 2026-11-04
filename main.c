@@ -13,7 +13,7 @@ int main(void) {
   enableRawMode();
   int running = 1;
 
-  Matrix* mat = initMatrix((Vec2i){4, 8});
+  BrailMatrix* mat = initBrailMatrix((Vec2i){4, 8});
 
   setBit(mat, (Vec2i){0, 0}, 1);
   setBit(mat, (Vec2i){1, 1}, 1);
@@ -67,7 +67,6 @@ int main(void) {
     drawBrail(mat, (Vec2i){17, 2}, (Color){0, 0, 255, 0, 0, 0});
 
     drawBoxTitle((Vec2i){0, 0}, (Vec2i){WIDTH-1, HEIGHT-1}, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
-
 
     updateFrame();
 

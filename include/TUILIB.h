@@ -48,7 +48,7 @@ extern "C" {
   typedef struct {
     Vec2i size;
     uint8_t* data;
-  } Matrix;
+  } BrailMatrix;
 
   typedef struct {
     Vec2i pos;
@@ -129,12 +129,12 @@ extern "C" {
   // ============================================================================
   // Braille & Matrix Functions
   // ============================================================================
-  Matrix* initMatrix(Vec2i size);
-  void setBit(const Matrix* mat, Vec2i pos, bool val);
-  bool getBit(const Matrix* mat, Vec2i pos);
-  uint8_t getCode(const Matrix* mat, size_t idx);
+  BrailMatrix* initBrailMatrix(Vec2i size);
+  void setBit(const BrailMatrix* mat, Vec2i pos, bool val);
+  bool getBit(const BrailMatrix* mat, Vec2i pos);
+  uint8_t getCode(const BrailMatrix* mat, size_t idx);
   void brailCode(uint8_t code, char out[4]);
-  void drawBrail(const Matrix* mat, Vec2i pos, const Color col);
+  void drawBrail(const BrailMatrix* mat, Vec2i pos, const Color col);
 
 #ifdef __cplusplus
 }

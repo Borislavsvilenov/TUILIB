@@ -376,8 +376,8 @@ bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const 
   return da_push(&elementBuf.TB, &box);
 }
 
-Matrix* initMatrix(Vec2i size) {
-  Matrix* mat = malloc(sizeof(Matrix));
+BrailMatrix* initBrailMatrix(Vec2i size) {
+  BrailMatrix* mat = malloc(sizeof(BrailMatrix));
   mat->size = size;
 
   uint8_t bytes = (size.x / 2) * (size.y / 4);
@@ -386,7 +386,7 @@ Matrix* initMatrix(Vec2i size) {
   return mat;
 }
 
-void setBit(const Matrix* mat, Vec2i pos, bool val) {
+void setBit(const BrailMatrix* mat, Vec2i pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
 
   size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
@@ -398,7 +398,7 @@ void setBit(const Matrix* mat, Vec2i pos, bool val) {
   }
 }
 
-bool getBit(const Matrix* mat, Vec2i pos) {
+bool getBit(const BrailMatrix* mat, Vec2i pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
 
   uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
@@ -406,7 +406,7 @@ bool getBit(const Matrix* mat, Vec2i pos) {
   return cell >> ((pos.y % 4) * 2 + (pos.x % 2)) & 1;
 }
 
-uint8_t getCode(const Matrix* mat, size_t idx) {
+uint8_t getCode(const BrailMatrix* mat, size_t idx) {
   uint8_t code = 0;
   uint8_t pat = mat->data[idx];
 
@@ -430,7 +430,7 @@ void brailCode(uint8_t code, char out[4]) {
   out[3] = '\0';
 }
 
-void drawBrail(const Matrix* mat, Vec2i pos, const Color col) {
+void drawBrail(const BrailMatrix* mat, Vec2i pos, const Color col) {
   Vec2i gridPos = {0, 0};
   char ch[4];
   for(size_t i = 0; i < (mat->size.x / 2) * (mat->size.y / 4); i++) { 
