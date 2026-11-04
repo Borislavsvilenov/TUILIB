@@ -2,22 +2,37 @@
   description = "TUILIB";
 
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }: {
     overlays.default = final: prev: {
-      TUILIB = final.callPackage ({stdenv, pkgs, ...}:
+      TUILIB = final.callPackage ({stdenv, ...}:
         stdenv.mkDerivation {
           src = ./.;
           pname = "TUILIB";
-          version = "unstable";
-          nativeBuildInputs = with pkgs; [  ];
-          buildInputs = with pkgs; [  ];
+          version = "0.1.0";
+          nativeBuildInputs = [ stdenv.cc ];
           
+          buildPhase = ''
+            runHook preBuild
+
+            $CC -c src/*.c -Iinclude -O3 -fPIC
+            ar rcs libtuilib.a *.o
+
+            runHook postBuild
+          '';
+
           installPhase = ''
-            mkdir -p $out/bin
-            cp $pname $out/bin/TUILIB
+            runHook preInstall
+
+            mkdir -p $out/include $out/lib
+
+            cp include/*.h $out/include/
+            cp libtuilib.a $out/lib/
+
+            runHook postInstall          
           '';
         }
       ) {};
@@ -26,7 +41,7 @@
   (flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs {
-        system = system;
+        inherit system;
         overlays = [ self.overlays.default ];
       };
       lib = nixpkgs.lib;
@@ -40,7 +55,9 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [  ];
           shellHook = ''
-
+            alias build="cc -c src/*.c -Iinclude -O3 -fPIC; ar rcs libtuilib.a *.o"
+            alias comp="cc main.c -Iinclude -L. -ltuilib -o test"
+            alias run="./test"
           '';
         };
       }
