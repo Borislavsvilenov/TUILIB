@@ -130,7 +130,7 @@ extern "C" {
   // Braille & Matrix Functions
   // ============================================================================
   BrailMatrix* initBrailMatrix(Vec2i size);
-  void setBit(const BrailMatrix* mat, Vec2i pos, bool val);
+  void setBit(BrailMatrix* mat, Vec2i pos, bool val);
   bool getBit(const BrailMatrix* mat, Vec2i pos);
   uint8_t getCode(const BrailMatrix* mat, size_t idx);
   void brailCode(uint8_t code, char out[4]);

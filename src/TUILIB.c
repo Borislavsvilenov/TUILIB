@@ -386,24 +386,27 @@ BrailMatrix* initBrailMatrix(Vec2i size) {
   return mat;
 }
 
-void setBit(const BrailMatrix* mat, Vec2i pos, bool val) {
+void setBit(BrailMatrix* mat, Vec2i pos, bool val) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return;
 
-  size_t idx = (pos.y / 4) * mat->size.x / 2 + (pos.x / 2);
+  size_t idx = (pos.y / 4) * (mat->size.x / 2) + (pos.x / 2);
+  int bit_shift = (pos.y % 4) * 2 + (pos.x % 2);
 
   if(val) {
-    mat->data[idx] |= (1 << ((pos.y % 4) * 2 + (pos.x % 2)));
+    mat->data[idx] |= (1 << bit_shift);
   } else {
-    mat->data[idx] &= ~(1 << ((pos.y % 4) * 2 + (pos.x % 2)));
+    mat->data[idx] &= ~(1 << bit_shift);
   }
 }
 
 bool getBit(const BrailMatrix* mat, Vec2i pos) {
   if(pos.x < 0 || pos.x >= mat->size.x || pos.y < 0 || pos.y >= mat->size.y) return 0;
 
-  uint8_t cell = mat->data[(pos.y / 4) * mat->size.x + (pos.x / 2)];
+  size_t idx = (pos.y / 4) * (mat->size.x / 2) + (pos.x / 2);
+  int bit_shift = (pos.y % 4) * 2 + (pos.x % 2);
+  uint8_t cell = mat->data[idx];
 
-  return cell >> ((pos.y % 4) * 2 + (pos.x % 2)) & 1;
+  return (cell >> bit_shift) & 1;
 }
 
 uint8_t getCode(const BrailMatrix* mat, size_t idx) {
@@ -486,6 +489,7 @@ void gridFlush() {
 }
 
 void initLib(void) {
+  printf("\x1b[2J\x1b[?25l"); 
   sa.sa_handler = handle_sigwinch;
   sa.sa_flags = SA_RESTART;
 

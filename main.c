@@ -7,8 +7,6 @@
 #include <unistd.h>
 
 int main(void) {
-  printf("\x1b[2J\x1b[?25l"); 
-
   initLib();
   enableRawMode();
   int running = 1;
