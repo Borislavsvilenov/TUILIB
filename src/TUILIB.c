@@ -380,7 +380,7 @@ BrailMatrix* initBrailMatrix(Vec2i size) {
   BrailMatrix* mat = malloc(sizeof(BrailMatrix));
   mat->size = size;
 
-  uint8_t bytes = (size.x / 2) * (size.y / 4);
+  uint32_t bytes = (size.x / 2) * (size.y / 4);
   mat->data = calloc(bytes, sizeof(uint8_t));
 
   return mat;
