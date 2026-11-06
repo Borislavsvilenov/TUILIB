@@ -105,6 +105,11 @@ extern "C" {
   // ============================================================================
   void drawChar(Vec2i pos, const char* ch, const Color col);
   void drawString(Vec2i pos, const char* str, const Color col);
+  void changeCOL(Vec2i spos, Vec2i epos, const Color col);
+
+  // Line Drawing
+  void drawLineH(Vec2i pos, uint32_t size, const Color col, uint8_t thickness);
+  void drawLineV(Vec2i pos, uint32_t size, const Color col, uint8_t thickness);
 
   // Block/Shape Drawing
   void drawFullBlock(Vec2i pos, const Color col);
@@ -127,7 +132,7 @@ extern "C" {
   bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
 
   // ============================================================================
-  // Braille & Matrix Functions
+  // Braille Functions
   // ============================================================================
   BrailMatrix* initBrailMatrix(Vec2i size);
   void setBit(BrailMatrix* mat, Vec2i pos, bool val);

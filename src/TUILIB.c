@@ -93,13 +93,13 @@ int readKey(void) {
 }
 
 void enableMouse(void) {
-    printf("\x1b[?1000h\x1b[?1006h");
-    fflush(stdout);
+  printf("\x1b[?1000h\x1b[?1006h");
+  fflush(stdout);
 }
 
 void disableMouse(void) {
-    printf("\x1b[?1000l\x1b[?1006l");
-    fflush(stdout);
+  printf("\x1b[?1000l\x1b[?1006l");
+  fflush(stdout);
 }
 
 void gridClear(void) {
@@ -172,6 +172,71 @@ void drawString(Vec2i pos, const char* str, const Color col) {
     curr_x++;
     str++;
   }
+}
+
+void changeCOL(Vec2i spos, Vec2i epos, const Color col) {
+  if(spos.x < 0) spos.x = 0;
+  if(spos.y < 0) spos.y = 0;
+  if(epos.x >= WIDTH) epos.x = WIDTH;
+  if(epos.y >= HEIGHT) epos.y = HEIGHT;
+
+  Tile* t;
+
+  for (size_t i = spos.x; i < epos.x; i++) {
+    for (size_t j = spos.y; j < epos.y; j++) {
+      t = &buf.back[spos.y * WIDTH + spos.x];
+      t->col = col;
+    }
+  }
+}
+
+void drawLineH(Vec2i pos, uint32_t size, const Color col, uint8_t thickness) {
+  if(pos.x < 0) pos.x = 0;
+  if(pos.y < 0) pos.y = 0;
+  if(pos.x+size >= WIDTH) size = WIDTH-pos.x;
+
+  char* ch = "─";
+
+  switch (thickness) {
+    case 1:
+      ch = "─";
+      break;
+    case 2:
+      ch = "═";
+      break;
+    default:
+      ch = "─";
+      break;
+  }
+
+  for (size_t i = 0; i < size; i++) {
+    drawChar(vec2i_add(pos, (Vec2i){i, 0}), ch, col);
+  }
+}
+
+void drawLineV(Vec2i pos, uint32_t size, const Color col, uint8_t thickness) {
+  if(pos.x < 0) pos.x = 0;
+  if(pos.y < 0) pos.y = 0;
+  if(pos.y+size >= HEIGHT) size = HEIGHT-pos.y;
+
+  char* ch = "│";
+
+  switch (thickness) {
+    case 1:
+      ch = "│";
+      break;
+    case 2:
+      ch = "║";
+      break;
+    default:
+      ch = "│";
+      break;
+  }
+
+  for (size_t j = 0; j < size; j++) {
+    drawChar(vec2i_add(pos, (Vec2i){0, j}), ch, col);
+  }
+
 }
 
 void drawBox(Vec2i opos, Vec2i epos, const Color col) {
