@@ -1,4 +1,5 @@
 #include "TUILIB.h"
+#include "Vec2.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,8 +120,8 @@ void drawChar(Vec2i pos, const char* ch, const Color col) {
 
   if(pos.x < 0 || pos.x >= WIDTH || pos.y < 0 || pos.y >= HEIGHT) return;
 
-  strncpy(t->ch, ch, 4);
-  t->ch[3] = '\0';
+  strncpy(t->ch, ch, 5);
+  t->ch[4] = '\0';
   t->col = col;
 }
 
@@ -236,7 +237,36 @@ void drawLineV(Vec2i pos, uint32_t size, const Color col, uint8_t thickness) {
   for (size_t j = 0; j < size; j++) {
     drawChar(vec2i_add(pos, (Vec2i){0, j}), ch, col);
   }
+}
 
+void drawGrid(Vec2i pos, Vec2i cellSize, Vec2i cellCount, const Color col, uint8_t thickness) {
+  for(size_t i = 1; i < cellCount.x; i++) {
+    drawLineH((Vec2i){pos.x, pos.y + (i*cellSize.y)}, cellCount.x*cellSize.x + 1, col, thickness);
+    drawLineV((Vec2i){pos.x + (i*cellSize.x), pos.y}, cellCount.y*cellSize.y + 1, col, thickness);
+  }
+  switch (thickness) {
+    case 1:
+      for(size_t i = 1; i < cellCount.x; i++) {
+        for(size_t j = 1; j < cellCount.y; j++) {
+          drawChar((Vec2i){pos.x + (i*cellSize.x), pos.y + (j*cellSize.y)}, "┼", col);
+        }
+      }
+      break;
+    case 2:
+      for(size_t i = 1; i < cellCount.x; i++) {
+        for(size_t j = 1; j < cellCount.y; j++) {
+          drawChar((Vec2i){pos.x + (i*cellSize.x), pos.y + (j*cellSize.y)}, "╬", col);
+        }
+      }
+      break;
+    default:
+      for(size_t i = 1; i < cellCount.x; i++) {
+        for(size_t j = 1; j < cellCount.y; j++) {
+          drawChar((Vec2i){pos.x + (i*cellSize.x), pos.y + (j*cellSize.y)}, "┼", col);
+        }
+      }
+      break;
+  }
 }
 
 void drawBox(Vec2i opos, Vec2i epos, const Color col) {
@@ -474,7 +504,7 @@ bool getBit(const BrailMatrix* mat, Vec2i pos) {
   return (cell >> bit_shift) & 1;
 }
 
-uint8_t getCode(const BrailMatrix* mat, size_t idx) {
+uint8_t getBrailCode(const BrailMatrix* mat, size_t idx) {
   uint8_t code = 0;
   uint8_t pat = mat->data[idx];
 
@@ -490,24 +520,52 @@ uint8_t getCode(const BrailMatrix* mat, size_t idx) {
   return code;
 }
 
-void brailCode(uint8_t code, char out[4]) {
-  uint32_t codepoint = 0x2800 + code;
-  out[0] = (char)(0xE0 | ((codepoint >> 12) & 0x0F));
-  out[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
-  out[2] = (char)(0x80 | (codepoint & 0x3F));
-  out[3] = '\0';
+void unicodeToUtf8(uint32_t codepoint, char out[5]) {
+  if (codepoint <= 0x7F) {
+    out[0] = (char)codepoint;
+    out[1] = '\0';
+  } else if (codepoint <= 0x7FF) {
+    out[0] = (char)(0xC0 | ((codepoint >> 6) & 0x1F));
+    out[1] = (char)(0x80 | (codepoint & 0x3F));
+    out[2] = '\0';
+  } else if (codepoint <= 0xFFFF) {
+    out[0] = (char)(0xE0 | ((codepoint >> 12) & 0x0F));
+    out[1] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+    out[2] = (char)(0x80 | (codepoint & 0x3F));
+    out[3] = '\0';
+  } else if (codepoint <= 0x10FFFF) {
+    out[0] = (char)(0xF0 | ((codepoint >> 18) & 0x07));
+    out[1] = (char)(0x80 | ((codepoint >> 12) & 0x3F));
+    out[2] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+    out[3] = (char)(0x80 | (codepoint & 0x3F));
+    out[4] = '\0';
+  } else {
+    out[0] = '\0';
+  }
 }
 
 void drawBrail(const BrailMatrix* mat, Vec2i pos, const Color col) {
   Vec2i gridPos = {0, 0};
-  char ch[4];
+  char ch[5];
   for(size_t i = 0; i < (mat->size.x / 2) * (mat->size.y / 4); i++) { 
     gridPos.x = i % (mat->size.x / 2);
     gridPos.y = i / (mat->size.x / 2);
 
-    brailCode(getCode(mat, i), ch);
+    unicodeToUtf8(0x2800 + getBrailCode(mat, i), ch);
     drawChar(vec2i_add(pos, gridPos), ch, col);
   }
+}
+
+void drawCardToScreen(uint8_t code, Vec2i pos, const Color col) {
+  char ch[5];
+  unicodeToUtf8(0x1F0A0 + code, ch);
+  drawChar(pos, ch, col);
+}
+
+void drawCardSymbol(uint8_t code, Vec2i pos, const Color col) {
+  char ch[5];
+  unicodeToUtf8(0x2660 + code, ch);
+  drawChar(pos, ch, col);
 }
 
 void appendToBuf(HelperBuf* HB, const char* data) {

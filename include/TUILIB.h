@@ -27,6 +27,10 @@ extern "C" {
 #define KEY_END        1006
 #define KEY_DELETE     1007
 
+#define WHITE_FG (Color){255, 255, 255, 0, 0, 0}
+#define WHITE_BG (Color){0, 0, 0, 255, 255, 255}
+#define WHITE (Color){255, 255, 255, 255, 255, 255}
+
   // ============================================================================
   // Data Structures
   // ============================================================================
@@ -36,7 +40,7 @@ extern "C" {
   } Color;
 
   typedef struct {
-    char ch[4];
+    char ch[5];
     Color col;
   } Tile;
 
@@ -63,7 +67,7 @@ extern "C" {
   } ElementBuffer;
 
   typedef struct {
-    char data[128 * 4096];
+    char data[128 * 8192];
     size_t len;
   } HelperBuf;
 
@@ -110,39 +114,45 @@ extern "C" {
   // Line Drawing
   void drawLineH(Vec2i pos, uint32_t size, const Color col, uint8_t thickness);
   void drawLineV(Vec2i pos, uint32_t size, const Color col, uint8_t thickness);
+  void drawGrid(Vec2i pos, Vec2i cellSize, Vec2i cellCount, const Color col, uint8_t thickness);
 
-  // Block/Shape Drawing
-  void drawFullBlock(Vec2i pos, const Color col);
-  void drawTopBlock(Vec2i pos, const Color col);
-  void drawBottomBlock(Vec2i pos, const Color col);
-  void drawLeftBlock(Vec2i pos, const Color col);
-  void drawRightBlock(Vec2i pos, const Color col);
-  void drawSquare(Vec2i pos, const Color col);
-  void drawCircle(Vec2i pos, const Color col);
-  void drawTriangleUp(Vec2i pos, const Color col);
-  void drawTriangleDown(Vec2i pos, const Color col);
-  void drawDiamond(Vec2i pos, const Color col);
+    // Block/Shape Drawing
+    void drawFullBlock(Vec2i pos, const Color col);
+    void drawTopBlock(Vec2i pos, const Color col);
+    void drawBottomBlock(Vec2i pos, const Color col);
+    void drawLeftBlock(Vec2i pos, const Color col);
+    void drawRightBlock(Vec2i pos, const Color col);
+    void drawSquare(Vec2i pos, const Color col);
+    void drawCircle(Vec2i pos, const Color col);
+    void drawTriangleUp(Vec2i pos, const Color col);
+    void drawTriangleDown(Vec2i pos, const Color col);
+    void drawDiamond(Vec2i pos, const Color col);
 
-  // Box Drawing
-  void drawBox(Vec2i opos, Vec2i epos, const Color col);
-  void drawBoxR(Vec2i opos, Vec2i epos, const Color col);
-  void drawBoxD(Vec2i opos, Vec2i epos, const Color col);
-  void drawBoxTitle(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
-  void drawBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
-  bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
+    // Box Drawing
+    void drawBox(Vec2i opos, Vec2i epos, const Color col);
+    void drawBoxR(Vec2i opos, Vec2i epos, const Color col);
+    void drawBoxD(Vec2i opos, Vec2i epos, const Color col);
+    void drawBoxTitle(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
+    void drawBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
+    bool addBoxText(Vec2i opos, Vec2i epos, const Color col, const char* str, const unsigned char type);
 
-  // ============================================================================
-  // Braille Functions
-  // ============================================================================
-  BrailMatrix* initBrailMatrix(Vec2i size);
-  void setBit(BrailMatrix* mat, Vec2i pos, bool val);
-  bool getBit(const BrailMatrix* mat, Vec2i pos);
-  uint8_t getCode(const BrailMatrix* mat, size_t idx);
-  void brailCode(uint8_t code, char out[4]);
-  void drawBrail(const BrailMatrix* mat, Vec2i pos, const Color col);
+    // ============================================================================
+    // Braille Functions
+    // ============================================================================
+
+    void unicodeToUtf8(uint32_t codepoint, char out[5]);
+
+    BrailMatrix* initBrailMatrix(Vec2i size);
+    void setBit(BrailMatrix* mat, Vec2i pos, bool val);
+    bool getBit(const BrailMatrix* mat, Vec2i pos);
+    uint8_t getBrailCode(const BrailMatrix* mat, size_t idx);
+    void drawBrail(const BrailMatrix* mat, Vec2i pos, const Color col);
+
+    void drawCardToScreen(uint8_t code, Vec2i pos, const Color col);
+    void drawCardSymbol(uint8_t code, Vec2i pos, const Color col);
 
 #ifdef __cplusplus
-}
+  }
 #endif
 
 #endif

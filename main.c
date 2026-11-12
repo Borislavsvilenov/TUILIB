@@ -62,9 +62,13 @@ int main(void) {
     drawTriangleDown((Vec2i){13, 2}, (Color){0, 255, 0, 255, 0, 0});
     drawDiamond((Vec2i){15, 2}, (Color){0, 255, 0, 0, 0, 0});
 
-    drawBrail(mat, (Vec2i){17, 2}, (Color){0, 0, 255, 0, 0, 0});
+    drawCardSymbol(1, (Vec2i){17, 2}, (Color){255, 255, 255, 0, 0, 0});
+
+    drawBrail(mat, (Vec2i){2, 4}, (Color){0, 0, 255, 0, 0, 0});
 
     drawBoxTitle((Vec2i){0, 0}, (Vec2i){WIDTH-1, HEIGHT-1}, (Color){0, 255, 255, 0, 0, 0}, "Hello World!", 'd');
+
+    drawGrid((Vec2i){2, 10}, (Vec2i){2, 2}, (Vec2i){3, 3}, WHITE_FG, 1);
 
     updateFrame();
 
